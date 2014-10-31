@@ -26,11 +26,13 @@ assert_exit 1 $CMD --dry-run --port 0
 assert_exit 1 $CMD --dry-run --port 7777 --user definitely-does-not-exist
 
 # Should create an upstart job at the specified path
-assert_exit 0 $CMD --port 7777 \
-              --job-file $TMP/upstart.conf \
-              --user `id -un` \
-              --metrics statsd: \
-              --base $TMP/deeply/nested/sl-pm
+$CMD --port 7777 \
+     --job-file $TMP/upstart.conf \
+     --user `id -un` \
+     --metrics statsd: \
+     --set-env 'FOO=bar BAR=foo' \
+     --base $TMP/deeply/nested/sl-pm 2>&1 \
+|| fail "Failed to run install"
 
 # Should match what was specified
 assert_file $TMP/upstart.conf "--listen 7777"
@@ -45,6 +47,10 @@ assert_file $TMP/upstart.conf "--config $TMP/deeply/nested/sl-pm/config"
 
 # Should create base for us
 assert_exit 0 test -d $TMP/deeply/nested/sl-pm
+
+# Should create initial environment file with FOO and BAR in it
+assert_file $TMP/deeply/nested/sl-pm/env.json '"FOO":"bar"'
+assert_file $TMP/deeply/nested/sl-pm/env.json '"BAR":"foo"'
 
 unset SL_PM_INSTALL_IGNORE_PLATFORM
 assert_report
